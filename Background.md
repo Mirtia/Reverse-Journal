@@ -9,7 +9,7 @@ This *still makes my brain explode.
 - `mov dest, src` is called **[Intel syntax](https://stackoverflow.com/tags/intel-syntax/info)**. (e.g. `mov eax, 123`)
 - `mov src, dest` is called **[AT&T syntax](https://stackoverflow.com/tags/att/info)**. (e.g. `mov $123, %eax`)
 
-	UNIX assemblers including the GNU assembler uses AT&T syntax, all other known x86 assemblers Intel syntax. You can read up on the differences [on wikipedia](http://en.wikipedia.org/wiki/X86_assembly_language#Syntax)
+UNIX assemblers including the GNU assembler uses AT&T syntax, all other known x86 assemblers Intel syntax. You can read up on the differences [on wikipedia](http://en.wikipedia.org/wiki/X86_assembly_language#Syntax)
 
 ## Stack
 

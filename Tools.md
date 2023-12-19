@@ -15,14 +15,17 @@ These are some of the important functionalities I use all the time:
 - Patching: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd>
 - Showing references: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
 - Going: <kbd>G</kbd>
-The [full purpose cheatsheet](https://ghidra-sre.org/CheatSheet.html).
-For a dark mode, because I get migraines all the time, I used this [repo](https://github.com/zackelia/ghidra-dark).
+
+Other:
+- The [full purpose cheatsheet](https://ghidra-sre.org/CheatSheet.html).
+- For a dark mode, because I get migraines all the time, I used this [repo](https://github.com/zackelia/ghidra-dark).
 
 ## Windbg
 
 I used Windbg for a 4n6 challenge, that in the end, didn't help at all. I learnt some cool functionalities though and I think it's a great tool, but quite complicated for a beginner like me.
 
 I am listing some of the commands I used.
+
 ## x64dbg
 
 `raise NotImplementedError`
@@ -30,6 +33,7 @@ I am listing some of the commands I used.
 ## gdb
 
 `raise NotImplementedError`
+
 ## dnSpy
 
 `raise NotImplementedError`
