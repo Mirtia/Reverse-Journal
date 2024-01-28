@@ -280,3 +280,56 @@ You can see the value by hovering the `unk_xxxxxxx`. I'm not sure if there was a
 
 Congratulations, you are a 🏌️ now!
 
+## Cyberpsychosis
+
+A friend recommended me this challenge. I really liked it but again, I spent most of the time exploring some theory stuff.
+
+```
+diamorphine.ko: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), BuildID[sha1]=e6a635e5bd8219ae93d2bc26574fff42dc4e1105, with debug_info, not stripped
+```
+``
+**Some useful links**:
+- [GitHub - m0nad/Diamorphine: LKM rootkit for Linux Kernels 2.6.x/3.x/4.x/5.x/6.x (x86/x86_64 and ARM64)](https://github.com/m0nad/Diamorphine)
+- [How did I approach making linux LKM rootkit, “reveng\_rtkit” ? | reveng007’s Blog](https://reveng007.github.io/blog/2022/03/08/reveng_rkit_detailed.html)
+
+So, what is an *LKM*? 
+
+>In [computing](https://en.wikipedia.org/wiki/Computing "Computing"), a **loadable kernel module** (**LKM**) is an [object file](https://en.wikipedia.org/wiki/Object_file "Object file") that contains code to [extend](https://en.wikipedia.org/wiki/Extensibility "Extensibility") the running [kernel](https://en.wikipedia.org/wiki/Kernel_(operating_system) "Kernel (operating system)"), or so-called _base kernel_, of an [operating system](https://en.wikipedia.org/wiki/Operating_system "Operating system").
+
+So, first I opened the `diamorphine.ko` file with Ghidra, and then with Ida for some reason. Both can do the job just fine. Anyways, let's go to `init_module` or `diamorphine_init` (entry point).
+
+Following m0nad's repository, we can see that  in order to make the module visible we have to:
+
+```bash
+kill -63 0
+```
+
+But in our case, after observing the disassembled code, we can see that we need to send another signal to kill (disarm) the rootkit.
+
+![[kill.png]]
+
+So, after connecting to the instance we resume by sending :
+
+```bash
+kill -46 0
+```
+
+And then to become root:
+
+```bash
+kill -64 0
+```
+
+Then, we can just remove the module:
+
+```bash
+rmmod diamorphine
+```
+
+To find the location of the flag, I just did some tree-grep thingie (I don't like *find*), but let's also put the find command that I won't remember it after one day.
+
+```bash
+find . -maxdepth 10 -type f -name 'flag.txt'
+```
+
+Good challenge!

@@ -11,6 +11,14 @@ This *still makes my brain explode.
 
 UNIX assemblers including the GNU assembler uses AT&T syntax, all other known x86 assemblers Intel syntax. You can read up on the differences [on wikipedia](http://en.wikipedia.org/wiki/X86_assembly_language#Syntax)
 
+```asm
+.data
+var1 BYTE 10h,
+.code
+mov al,var1 ; AL = 10h
+mov al,[var1] ; AL = 10h
+```
+
 ## Stack
 
 You can start by reading [Stack explained](https://cratecode.com/info/x86-assembly-nasm-stack).
@@ -30,10 +38,14 @@ long func(long a, long b, long c, long d,
 
 ![[x64_frame_nonleaf.png | Stack frame after calling func]]
 
+
+https://en.wikipedia.org/wiki/Win32_Thread_Information_Block#Accessing_the_TIB
 ## Operation Precedence
 
 `raise NotImplementedError`
 
 ## Information on Executables
+
+
 
 `raise NotImplementedError`
