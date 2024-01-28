@@ -287,7 +287,7 @@ A friend recommended me this challenge. I really liked it but again, I spent mos
 ```
 diamorphine.ko: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), BuildID[sha1]=e6a635e5bd8219ae93d2bc26574fff42dc4e1105, with debug_info, not stripped
 ```
-``
+
 **Some useful links**:
 - [GitHub - m0nad/Diamorphine: LKM rootkit for Linux Kernels 2.6.x/3.x/4.x/5.x/6.x (x86/x86_64 and ARM64)](https://github.com/m0nad/Diamorphine)
 - [How did I approach making linux LKM rootkit, “reveng\_rtkit” ? | reveng007’s Blog](https://reveng007.github.io/blog/2022/03/08/reveng_rkit_detailed.html)
