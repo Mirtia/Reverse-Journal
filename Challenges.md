@@ -333,3 +333,119 @@ find . -maxdepth 10 -type f -name 'flag.txt'
 ```
 
 Good challenge!
+
+## SEPC
+
+This is my first medium challenge from Hack-The-Box platform. I will try to dive into as much as possible.
+### First steps
+
+First we extract the files from the `initramfs.cpio` file.
+
+```sh
+cpio -idmv < initramfs.cpio
+```
+
+The important files are:
+- `checker.ko`
+- `checker`
+
+We also can observe the following `init` script.
+
+```sh
+# -- init --
+#!/bin/sh
+insmod checker.ko
+mount -t proc none /proc
+mount -t sysfs none /sys
+mknod /dev/checker c 137 0
+chmod 0666 /dev/checker
+exec /checker
+```
+
+The `init` file first loads the kernel module `checker.ko`.
+We can see that with `mknod /dev/checker c 137 0`, a new character device is created, with major number 137 and minor number 0.
+With `exec /checker`, the current process in the shell is replaced with /checker.
+
+We can try and reverse both the kernel module and the executable.
+
+```C
+/* `main` starting point of the module */
+void module_start(void) {
+	int ret_0;
+	ulong ret_1;
+	/* Registers a range of device numbers (major number, number of
+	 * consecutive devices, the name of device or driver)
+	 * */
+	ret_0 = register_chrdev_region(dev,1,"checker");
+	if (ret_0 < 0) 
+		_printk(&DAT_0010036d);
+	else {
+		/* On success, create a class `checker`, 
+		 * (string name of the class)
+		 * */
+		DAT_00100cc8 = class_create("checker");
+		if (DAT_00100cc8 < 0xfffffffffffff001) 
+		{
+		  /* Initialize cdev,  
+		   * (structure to initialize, file operations (fops))
+		   * */
+		  cdev_init(&DAT_00100c60,&PTR___this_module_001006a0);
+		  ret_0 = cdev_add(&DAT_00100c60,dev,1);
+		  if (ret_0 != 0) {
+			_printk(&DAT_001003c8,"module_start",ret_0);
+		  }
+		  /* creates a character device and registers it with sfys 
+		   * (class, parent, dev_t, data to be added for callbacks,
+		   * string for the device name)
+		   * */
+		  ret_1 = device_create(DAT_00100cc8,0,dev,0,"checker");
+		  if (ret_1 < 0xfffffffffffff001) {
+			__x86_return_thunk();
+			return;
+		  }
+		  _printk(&DAT_00100386);
+		}
+		else {
+		  _printk(&DAT_001003a0);
+		}
+	}
+	__x86_return_thunk();
+	return;
+}
+
+
+```
+
+**Important functions**:
+- [register\_chrdev\_region](https://docs.huihoo.com/linux/kernel/2.6.26/kernel-api/re723.html)
+- [class_create](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwiBtprp2ZGEAxXEFxAIHRizDbIQFnoECBEQAQ&url=https%3A%2F%2Fmanpages.debian.org%2Ftesting%2Flinux-manual-4.8%2F__class_create.9&usg=AOvVaw30rJXAvE04NPydJrrjoHtz&opi=89978449)
+- [cdev\_init](https://archive.kernel.org/oldlinux/htmldocs/kernel-api/API-cdev-init.html)
+- [device\_create](https://manpages.debian.org/jessie/linux-manual-3.16/device_create.9.en.html)
+### Useful Information / Understanding
+
+I wanted to understand more and kind of refresh my knowledge on Linux devices. These are some nice readings.
+
+- [3.4. Char Device Registration](http://www.makelinux.net/ldd3/chp-3-sect-4.shtml)
+### Continuing ...
+
+I made a script to debug the `checker` file just in case by modifying the given `run.sh` script.
+
+```sh
+#!/bin/sh
+
+qemu-system-x86_64 \
+	-kernel bzImage \
+	-initrd initramfs.cpio.gz \
+	--append "console=ttyS0 nokaslr" \
+	-nographic \
+	-s -S
+```
+
+To attach to your gdb session just:
+
+```sh
+target remote :1234
+```
+
+### Understanding the kernel  module
+
