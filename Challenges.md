@@ -336,7 +336,7 @@ Good challenge!
 
 ## SEPC
 
-This is my first medium challenge from Hack-The-Box platform. I will try to dive into as much as possible.
+This is my first medium challenge from Hack-The-Box platform. I will try to dive into as much as possible. I went to RANDOM.org, assigned some numbers to the available medium challenges and this was the challenge that was selected.
 ### First steps
 
 First we extract the files from the `initramfs.cpio` file.
@@ -368,7 +368,7 @@ With `exec /checker`, the current process in the shell is replaced with /checker
 
 We can try and reverse both the kernel module and the executable.
 
-```C
+```C++
 /* `main` starting point of the module */
 void module_start(void) {
 	int ret_0;
@@ -398,7 +398,7 @@ void module_start(void) {
 		   * (class, parent, dev_t, data to be added for callbacks,
 		   * string for the device name)
 		   * */
-		  ret_1 = device_create(DAT_00100cc8,0,dev,0,"checker");
+			  ret_1 = device_create(DAT_00100cc8,0,dev,0,"checker");
 		  if (ret_1 < 0xfffffffffffff001) {
 			__x86_return_thunk();
 			return;
@@ -412,8 +412,6 @@ void module_start(void) {
 	__x86_return_thunk();
 	return;
 }
-
-
 ```
 
 **Important functions**:
@@ -426,6 +424,8 @@ void module_start(void) {
 I wanted to understand more and kind of refresh my knowledge on Linux devices. These are some nice readings.
 
 - [3.4. Char Device Registration](http://www.makelinux.net/ldd3/chp-3-sect-4.shtml)
+- [IoT Series (IV): Debugging with GDB & GHIDRA + Zero-day - ArtResilia](https://www.artresilia.com/iot-series-iv-debugging-with-gdb-ghidra-zero-day/)
+- Try debugging with IDA or ghidra (I think with ghidra there is a higher chance)
 ### Continuing ...
 
 I made a script to debug the `checker` file just in case by modifying the given `run.sh` script.
@@ -436,10 +436,12 @@ I made a script to debug the `checker` file just in case by modifying the given 
 qemu-system-x86_64 \
 	-kernel bzImage \
 	-initrd initramfs.cpio.gz \
-	--append "console=ttyS0 nokaslr" \
+	--append "console=ttyS0 noaslr" \
 	-nographic \
 	-s -S
 ```
+
+This did not help...
 
 To attach to your gdb session just:
 
@@ -447,5 +449,97 @@ To attach to your gdb session just:
 target remote :1234
 ```
 
-### Understanding the kernel  module
+I examined the **checker.ko** and found the magic comparison!  If I had IDA pro, it would be a lot easier to examine the pseudo code, but I gotta look at the assembly code instead for now...
 
+This is kind of obvious, but it has helped me to search for cmp operands when I know that a comparison is being made. This gets out of hand when the program is huge.  
+
+Another hint was searching for `_copy_from_user`. 
+
+![[block.png]]
+
+
+```asm
+mov rax, cs:qword_B88
+mov rdi, rsi
+movzx edx, ds:byte_400[rax]
+xor dl, ds:byte_3C0[rax]
+cmp byte ptr cs:qword_B80, dl
+jz short loc_15C
+```
+
+- `movzx` *dst*, *source* (Move with zero extend)
+- [dl](https://stackoverflow.com/questions/6007929/meaning-of-an-assembly-language-statement)
+
+Following the values at the data section, if we xor the sequences, we get the flag. Something that was probably my mistake was that I couldn't get the final `}` from the flag.
+## Rauth
+
+```
+rauth: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=fc374b8206147fac9067599050989191b39eefcf, with debug_info, not stripped
+```
+
+On first observation, we can see that it's a `PIE` executable. We will jump into this later.
+### Calls
+
+Ok, looking at the code we see some encryption going on:
+- salsa20...new (alias: **salsa20_new**)
+- salsa20..apply_keystream (alias: **salsa20_apply**)
+### Salsa20
+
+Initial state of Salsa20:
+
+| "expa" | Key    | Key    | Key    |
+| ------ | ------ | ------ | ------ |
+| Key    | "nd 3" | Nonce  | Nonce  |
+| Pos.   | Pos.   | "2-by" | Key    |
+| Key    | Key    | Key    | "te k" |
+[Understanding Salsa20 Encryption](https://systemweakness.com/understanding-salsa20-encryption-a-comprehensive-guide-2023-2d6688889e4):
+
+We have to find the key, nonce and the encrypted text in order to be able to get the plaintext.
+
+### Solving ...
+
+First, we try to find the Salsa20 block somewhere in the code. It should be visible after the call to **salsa20_new**.
+
+Looking at the stack (breakpoint after **salsa20_new**) we can see the block:
+
+![[Pasted image 20240304003714.png]]
+
+**expa**ef39f4f20e76e33b**nd 3**d4c270a3 **2-by** d25f4db338e81b10**te k**
+
+**Key**: ef39f4f20e76e33bd25f4db338e81b10
+**Nonce**: d4c270a3
+
+Then we look for the encrypted text. Let's explore the area around  **salsa20_apply**. I was very confused because I was expecting the encrypted value to be around there.
+Maybe, I was thinking something wrong!
+Looking around again at the values loaded by cs (code segment), I can see the following:
+
+```
+.text:000055C15A406611                 movaps  xmm0, cs:xmmword_55C15A439CC0
+.text:000055C15A406618                 movups  xmmword ptr [rax], xmm0
+.text:000055C15A40661B                 movaps  xmm0, cs:xmmword_55C15A439CD0
+.text:000055C15A406622                 movups  xmmword ptr [rax+16], xmm0
+.text:000055C15A406626                 mov     [rsp+168h], rax
+.text:000055C15A40662E                 movdqa  xmm0, cs:xmmword_55C15A439CE0
+```
+
+**cs:xmmword_55C15A439CC0** -> `0F331CBA656F5D958D5A829A3B15F0505h`
+**cs:xmmword_55C15A439CD0** -> `0F91BAD626FB63EE372EC9DC9312A4324h`
+
+Password found! Just input it to the prompt now and the flag is yours.
+### Other stuff I found interesting (not necessary for the solution)
+
+- Salsa rounds:
+
+b ^= (a + d) <<< 7;
+c ^= (b + a) <<< 9;
+d ^= (c + b) <<< 13;
+a ^= (d + c) <<< 18;
+
+![[Pasted image 20240304002719.png]]
+
+- **[XMM](https://www.oreilly.com/library/view/mastering-assembly-programming/9781787287488/50685a1c-0812-407c-8d7d-d7a9202722b3.xhtml)** registers
+- The `cs` prefix indicates that the address is relative to the code segment.
+- The [movaps](https://www.felixcloutier.com/x86/movaps) moves a 128-bit value aligned on a 16-byte boundary (**movups** for unaligned).
+- [c - Why are global variables in x86-64 accessed relative to the instruction pointer? - Stack Overflow](https://stackoverflow.com/questions/56262889/why-are-global-variables-in-x86-64-accessed-relative-to-the-instruction-pointer)
+- [assembly - CS: override on access to global variables in IDA output, like mov eax, cs:x? - Stack Overflow](https://stackoverflow.com/questions/68702174/cs-override-on-access-to-global-variables-in-ida-output-like-mov-eax-csx)
+- __OWORD__ = 16-byte data type
