@@ -471,6 +471,7 @@ jz short loc_15C
 - [dl](https://stackoverflow.com/questions/6007929/meaning-of-an-assembly-language-statement)
 
 Following the values at the data section, if we xor the sequences, we get the flag. Something that was probably my mistake was that I couldn't get the final `}` from the flag.
+
 ## Rauth
 
 ```
@@ -478,11 +479,13 @@ rauth: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically link
 ```
 
 On first observation, we can see that it's a `PIE` executable. We will jump into this later.
+
 ### Calls
 
 Ok, looking at the code we see some encryption going on:
 - salsa20...new (alias: **salsa20_new**)
 - salsa20..apply_keystream (alias: **salsa20_apply**)
+
 ### Salsa20
 
 Initial state of Salsa20:
@@ -492,7 +495,8 @@ Initial state of Salsa20:
 | Key    | "nd 3" | Nonce  | Nonce  |
 | Pos.   | Pos.   | "2-by" | Key    |
 | Key    | Key    | Key    | "te k" |
-[Understanding Salsa20 Encryption](https://systemweakness.com/understanding-salsa20-encryption-a-comprehensive-guide-2023-2d6688889e4):
+
+- [Understanding Salsa20 Encryption](https://systemweakness.com/understanding-salsa20-encryption-a-comprehensive-guide-2023-2d6688889e4):
 
 We have to find the key, nonce and the encrypted text in order to be able to get the plaintext.
 
@@ -502,7 +506,7 @@ First, we try to find the Salsa20 block somewhere in the code. It should be visi
 
 Looking at the stack (breakpoint after **salsa20_new**) we can see the block:
 
-![[Pasted image 20240304003714.png]]
+![[salsa.png]]
 
 **expa**ef39f4f20e76e33b**nd 3**d4c270a3 **2-by** d25f4db338e81b10**te k**
 
@@ -522,20 +526,22 @@ Looking around again at the values loaded by cs (code segment), I can see the fo
 .text:000055C15A40662E                 movdqa  xmm0, cs:xmmword_55C15A439CE0
 ```
 
-**cs:xmmword_55C15A439CC0** -> `0F331CBA656F5D958D5A829A3B15F0505h`
-**cs:xmmword_55C15A439CD0** -> `0F91BAD626FB63EE372EC9DC9312A4324h`
+- **cs:xmmword_55C15A439CC0** -> `0F331CBA656F5D958D5A829A3B15F0505h`
+- **cs:xmmword_55C15A439CD0** -> `0F91BAD626FB63EE372EC9DC9312A4324h`
 
 Password found! Just input it to the prompt now and the flag is yours.
 ### Other stuff I found interesting (not necessary for the solution)
 
 - Salsa rounds:
 
+```
 b ^= (a + d) <<< 7;
 c ^= (b + a) <<< 9;
 d ^= (c + b) <<< 13;
 a ^= (d + c) <<< 18;
+```
 
-![[Pasted image 20240304002719.png]]
+![[salsa_rounds.png]]
 
 - **[XMM](https://www.oreilly.com/library/view/mastering-assembly-programming/9781787287488/50685a1c-0812-407c-8d7d-d7a9202722b3.xhtml)** registers
 - The `cs` prefix indicates that the address is relative to the code segment.
