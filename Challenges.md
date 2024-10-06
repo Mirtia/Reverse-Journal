@@ -449,7 +449,7 @@ To attach to your gdb session just:
 target remote :1234
 ```
 
-I examined the **checker.ko** and found the magic comparison!  If I had IDA pro, it would be a lot easier to examine the pseudo code, but I gotta look at the assembly code instead for now...
+I examined the **checker.ko** and found the magic comparison! ~~If I had IDA pro, it would be a lot easier to examine the pseudo code, but I gotta look at the assembly code instead for now...~~ No, I'm just an idiot, there is Pseudocode view available.
 
 This is kind of obvious, but it has helped me to search for cmp operands when I know that a comparison is being made. This gets out of hand when the program is huge.  
 
