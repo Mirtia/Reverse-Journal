@@ -5,6 +5,7 @@ This was the first challenge I did from Hack The Box. I started it because there
 I started by `strings` as in every challenge, regardless of the category.
 We can see something interesting by piping the strings to grep `strings behindhtescenes | grep -n HTB -B 2 -A 2`,
 
+{% raw %}
 ```
 19-[]A\A]A^A_
 20-./challenge <password>
@@ -12,6 +13,7 @@ We can see something interesting by piping the strings to grep `strings behindht
 22-:*3$"
 23-GCC: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
 ```
+{% endraw %}
 
 From Line *20* and *21*, I assumed that the program takes as input a *password*. 
 
